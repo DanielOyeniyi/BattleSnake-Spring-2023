@@ -43,26 +43,39 @@ def end(game_state: typing.Dict):
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-    my_head = game_state["you"]["body"][0]  # Coordinates of your head
+    my_head = game_state['you']['body'][0]  # Coordinates of your head
     next_moves = make_directions(my_head)
     boundaries = make_boundaries(game_state) 
     snakes = make_snakes(game_state)
-
+    food = closest_food(game_state, my_head)
+    
+    food_moves = move_towards(my_head, food)
+  
     safe_moves = []
     for move in next_moves:
         if move[1] not in boundaries and move[1] not in snakes:
             safe_moves.append(move[0])  
-      
-      
+          
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
+      
 
-    # Choose a random move from the safe ones
+    for move in food_moves:
+        if move not in safe_moves:
+            food_moves.remove(move)
+          
+    # Choose a random move from the safe ones         
     next_move = random.choice(safe_moves)
   
-    print(f"MOVE {game_state['turn']}: {next_move}")
-    return {"move": next_move}
+    if len(food_moves) != 0:
+        print(f"MOVE {game_state['turn']}: {next_move}")
+        next_move = random.choice(food_moves)
+        return {"move": next_move}
+      
+    else:
+        print(f"MOVE {game_state['turn']}: {next_move}")
+        return {"move": next_move}
 
 def make_directions(position: dict) -> list:
     '''
@@ -71,10 +84,10 @@ def make_directions(position: dict) -> list:
     param postion: a dict containing the coordinates of the given position
     return: a list of tuples containing the directions and thei coordinates
     '''
-    right = {"x": position["x"]+1, "y": position["y"]}
-    left = {"x": position["x"]-1, "y": position["y"]}
-    up = {"x": position["x"], "y": position["y"]+1}
-    down = {"x": position["x"], "y": position["y"]-1}
+    right = {"x": position['x']+1, "y": position['y']}
+    left = {"x": position['x']-1, "y": position['y']}
+    up = {"x": position['x'], "y": position['y']+1}
+    down = {"x": position['x'], "y": position['y']-1}
     return [("right", right), ("left", left), ("up", up), ("down", down)]
   
 def make_boundaries(game_state: dict) -> list:
@@ -106,15 +119,53 @@ def make_snakes(game_state: dict) -> list:
     return:  a list containing dicts of coordinates
     '''
     snakes = []
-    for snake in  game_state["board"]["snakes"]:
-      for body in snake["body"]:
+    for snake in  game_state['board']['snakes']:
+      for body in snake['body']:
         snakes.append(body)
         
-    for body in game_state["you"]["body"]:
+    for body in game_state['you']['body']:
       snakes.append(body)  
   
     return snakes
-    
+
+def closest_food(game_state: dict, position: dict) -> dict:
+    '''
+    returns the coordinates of the closest food on the board
+  
+    param game_state: a dict containing all the games information
+    param postion: a dict containing the coordinates of the given position
+    return:  a list containing dicts of coordinates
+    '''
+    min = {"position": "", "distance": game_state["board"]["width"] + game_state["board"]["height"] }
+    for food in game_state['board']['food']:
+      distance = abs(food['x'] - position['x'])
+      distance += abs(food['y'] - position['y'])
+      if distance < min['distance']:
+          min['position'] = food
+          min['distance'] = distance
+    return min['position']
+
+def move_towards(position: dict, target: dict):
+    '''
+    returns the directions of the target relative to the position
+  
+    param postion: a dict containing the coordinates of the given position
+    param target: a dict containing the coordinates of the target position
+    return:  a list containing direction strings
+    '''
+    moves = []
+    if position['x'] < target['x']:
+        moves.append("right")
+      
+    if position['x'] > target['x']:
+        moves.append("left")
+      
+    if position['y'] < target['y']:
+        moves.append("up")
+    if position['y'] > target['y']:
+        moves.append("down")
+    return moves
+  
 # Start server when `python main.py` is run
 if __name__ == "__main__":
     from server import run_server
