@@ -43,55 +43,78 @@ def end(game_state: typing.Dict):
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-
-    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
-
-    # We've included code to prevent your Battlesnake from moving backwards
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
-    my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
+    next_moves = make_directions(my_head)
+    boundaries = make_boundaries(game_state) 
+    snakes = make_snakes(game_state)
 
-    if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        is_move_safe["left"] = False
-
-    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
-        is_move_safe["right"] = False
-
-    elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        is_move_safe["down"] = False
-
-    elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        is_move_safe["up"] = False
-
-    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-    # board_width = game_state['board']['width']
-    # board_height = game_state['board']['height']
-
-    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-    # my_body = game_state['you']['body']
-
-    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    # opponents = game_state['board']['snakes']
-
-    # Are there any safe moves left?
     safe_moves = []
-    for move, isSafe in is_move_safe.items():
-        if isSafe:
-            safe_moves.append(move)
-
+    for move in next_moves:
+        if move[1] not in boundaries and move[1] not in snakes:
+            safe_moves.append(move[0])  
+      
+      
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
 
     # Choose a random move from the safe ones
     next_move = random.choice(safe_moves)
-
-    # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
-    # food = game_state['board']['food']
-
+  
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
 
+def make_directions(position: dict) -> list:
+    '''
+    calculates the right, left, up, and down positons from the given position
+  
+    param postion: a dict containing the coordinates of the given position
+    return: a list of tuples containing the directions and thei coordinates
+    '''
+    right = {"x": position["x"]+1, "y": position["y"]}
+    left = {"x": position["x"]-1, "y": position["y"]}
+    up = {"x": position["x"], "y": position["y"]+1}
+    down = {"x": position["x"], "y": position["y"]-1}
+    return [("right", right), ("left", left), ("up", up), ("down", down)]
+  
+def make_boundaries(game_state: dict) -> list:
+    '''
+    calculates the boundaries of the board and stores them  in a list
+  
+    param game_state: a dict containing all the games information
+    return:  a list containing dicts of coordinates
+    '''
+    boundaries = []
+    board_width = game_state['board']['width']
+    board_height = game_state['board']['height']
+    
+    for  x  in  range(board_width):
+      boundaries.append({"x": x, "y": -1})
+      boundaries.append({"x": x, "y": board_height})
+      
+    for y  in  range(board_height):
+      boundaries.append({"x": -1, "y": y})
+      boundaries.append({"x": board_width, "y": y})
+  
+    return boundaries
 
+def make_snakes(game_state: dict) -> list:
+    '''
+    stores the locations of all the snakes on the board in a list
+  
+    param game_state: a dict containing all the games information
+    return:  a list containing dicts of coordinates
+    '''
+    snakes = []
+    for snake in  game_state["board"]["snakes"]:
+      for body in snake["body"]:
+        snakes.append(body)
+        
+    for body in game_state["you"]["body"]:
+      snakes.append(body)  
+  
+    return snakes
+    
 # Start server when `python main.py` is run
 if __name__ == "__main__":
     from server import run_server
