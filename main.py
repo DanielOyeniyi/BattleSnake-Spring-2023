@@ -43,15 +43,14 @@ def end(game_state: typing.Dict):
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-    my_head = game_state['you']['body'][0]  # Coordinates of your head
-    next_moves = make_directions(my_head)
-    boundaries = make_boundaries(game_state) 
-    snakes = make_snakes(game_state)
-    food = closest_food(game_state, my_head)
-    
-    food_moves = move_towards(my_head, food)
+    my_head: dict = game_state['you']['body'][0]  # Coordinates of your head
+    next_moves: list = make_directions(my_head)
+    boundaries: list = make_boundaries(game_state) 
+    snakes: list = make_snakes(game_state)
+    food: dict = closest_food(game_state, my_head)
+    food_moves: list = move_towards(my_head, food)
   
-    safe_moves = []
+    safe_moves: list = []
     for move in next_moves:
         if move[1] not in boundaries and move[1] not in snakes:
             safe_moves.append(move[0])  
@@ -64,16 +63,14 @@ def move(game_state: typing.Dict) -> typing.Dict:
     for move in food_moves:
         if move not in safe_moves:
             food_moves.remove(move)
-          
-    # Choose a random move from the safe ones         
-    next_move = random.choice(safe_moves)
   
     if len(food_moves) != 0:
-        print(f"MOVE {game_state['turn']}: {next_move}")
         next_move = random.choice(food_moves)
+        print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
       
-    else:
+    else:     
+        next_move: list  = random.choice(safe_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
 
