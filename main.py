@@ -49,20 +49,46 @@ def move(game_state: typing.Dict) -> typing.Dict:
     snakes: list = make_snakes(game_state)
     food: dict = closest_food(game_state, my_head)
     food_moves: list = move_towards(my_head, food)
-  
+    
     safe_moves: list = []
     for move in next_moves:
         if move[1] not in boundaries and move[1] not in snakes:
             safe_moves.append(move[0])  
-          
+
+    tmp:list = []
+    for move in next_moves:
+        if move[0] in safe_moves and check_collisions(game_state, move[1]):
+            tmp.append(move[0])
+
+    if (len(tmp) != 0):        # avoids moves with high chance of collision
+        safe_moves = tmp
+      
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
-      
 
+    optimal: list = []
+    max: int = 0
+    for move in next_moves:
+        if move[0] in safe_moves:
+            value: int = connected(game_state, move[1])
+            optimal.append(((move[0]),value))
+            if value > max:
+                max = value
+
+    max_connected: list = []
+    for move in optimal:
+        if move[1] >= max:
+            max_connected.append(move[0])
+            max = move[1]
+          
+    safe_moves = max_connected
+    tmp = []
     for move in food_moves:
-        if move not in safe_moves:
-            food_moves.remove(move)
+        if move in safe_moves:
+            tmp.append(move)
+          
+    food_moves = tmp
   
     if len(food_moves) != 0:
         next_move = random.choice(food_moves)
@@ -73,7 +99,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
         next_move: list  = random.choice(safe_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
-
+      
 def make_directions(position: dict) -> list:
     '''
     calculates the right, left, up, and down positons from the given position
@@ -94,9 +120,9 @@ def make_boundaries(game_state: dict) -> list:
     param game_state: a dict containing all the games information
     return:  a list containing dicts of coordinates
     '''
-    boundaries = []
-    board_width = game_state['board']['width']
-    board_height = game_state['board']['height']
+    boundaries: list = []
+    board_width: int = game_state['board']['width']
+    board_height: int = game_state['board']['height']
     
     for  x  in  range(board_width):
       boundaries.append({"x": x, "y": -1})
@@ -115,15 +141,56 @@ def make_snakes(game_state: dict) -> list:
     param game_state: a dict containing all the games information
     return:  a list containing dicts of coordinates
     '''
-    snakes = []
+    snakes: list = []
     for snake in  game_state['board']['snakes']:
       for body in snake['body']:
-        snakes.append(body)
-        
-    for body in game_state['you']['body']:
-      snakes.append(body)  
+          if body != snake['body'][-1]:        # tail
+              snakes.append(body)
+          elif include_tail(game_state, snake['body'][0]):
+              snakes.append(body)
   
     return snakes
+  
+def check_collisions(game_state: dict, position: dict) -> bool:
+    '''
+    checks if the position has a chance of colliding with the head
+    of a bigger snake
+  
+    param game_state: a dict containing all the games information
+    param postion: a dict containing the coordinates of the given position
+    return:  True if there is a chance of collision
+    '''
+    my_head: dict = game_state['you']['body'][0] 
+    my_length: int = game_state['you']['length']
+    directions: list = make_directions(position)
+    snake_heads: list = []
+
+    for snake in game_state['board']['snakes']:
+        snake_head: dict = snake['body'][0]
+        if snake['length'] >= my_length and snake_head != my_head:
+            snake_heads.append(snake_head)
+
+    for direction in directions:
+        if direction[1] in snake_heads:
+            return False
+          
+    return True
+
+def include_tail(game_state: dict, head: dict) -> bool:
+    '''
+    checks if the snake has a chance of growing 
+  
+    param game_state: a dict containing all the games information
+    param head: a dict containing the coordinates of the given snake head
+    return:  True if there is a chance of the snake growing
+    '''
+    directions: list = make_directions(head)
+
+    for direction in directions:
+        if direction[1] in game_state['board']['food']:
+            return True
+      
+    return False    
 
 def closest_food(game_state: dict, position: dict) -> dict:
     '''
@@ -133,14 +200,51 @@ def closest_food(game_state: dict, position: dict) -> dict:
     param postion: a dict containing the coordinates of the given position
     return:  a list containing dicts of coordinates
     '''
-    min = {"position": "", "distance": game_state["board"]["width"] + game_state["board"]["height"] }
+    min: dict = {"position": "", "distance": game_state["board"]["width"] + game_state["board"]["height"] }
     for food in game_state['board']['food']:
-      distance = abs(food['x'] - position['x'])
+      distance: int = abs(food['x'] - position['x'])
       distance += abs(food['y'] - position['y'])
       if distance < min['distance']:
           min['position'] = food
           min['distance'] = distance
     return min['position']
+
+def connected(game_state: dict, position) -> int:
+    '''
+    calculates the number of coordinates connected to the given position
+  
+    param game_state: a dict containing all the games information
+    param postion: a dict containing the coordinates of the given position
+    return: an int representing the number of coordinates
+    '''
+    board_width: int = game_state['board']['width']
+    board_height: int = game_state['board']['height']
+    marked: list = [[False]*board_width for i in range(board_height)]
+    snakes = make_snakes(game_state)
+    boundaries = make_boundaries(game_state)
+    return connected_helper(snakes, boundaries, position, marked)
+
+def connected_helper(snakes: dict, boundaries: dict, position: dict, marked: list) -> int:
+    '''
+    Helper for 'connected' fucntion
+  
+    param snakes: a dict containing all the snake coordinates on the board
+    param boundaries: a dict containing all the boundary coordinates on the board
+    param postion: a dict containing the coordinates of the given position
+    param marked: a 2D list representing coordinates
+    return: an int representing the number of coordinates
+    '''
+    if position in snakes or position in boundaries or marked[position['x']][position['y']]:
+        return 0
+      
+    marked[position['x']][position['y']] = True
+      
+    directions = make_directions(position)
+    return (1 + connected_helper(snakes, boundaries, directions[0][1], marked) 
+              + connected_helper(snakes, boundaries, directions[1][1], marked) 
+              + connected_helper(snakes, boundaries, directions[2][1], marked) 
+              + connected_helper(snakes, boundaries, directions[3][1], marked))
+
 
 def move_towards(position: dict, target: dict):
     '''
