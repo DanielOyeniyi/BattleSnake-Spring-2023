@@ -62,7 +62,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     if (len(tmp) != 0):        # avoids moves with high chance of collision
         safe_moves = tmp
-      
+
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
@@ -83,6 +83,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
             max = move[1]
           
     safe_moves = max_connected
+
     tmp = []
     for move in food_moves:
         if move in safe_moves:
@@ -167,6 +168,7 @@ def check_collisions(game_state: dict, position: dict) -> bool:
 
     for snake in game_state['board']['snakes']:
         snake_head: dict = snake['body'][0]
+
         if snake['length'] >= my_length and snake_head != my_head:
             snake_heads.append(snake_head)
 
