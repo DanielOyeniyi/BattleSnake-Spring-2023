@@ -23,9 +23,9 @@ def info() -> typing.Dict:
     return {
         "apiversion": "1",
         "author": "",  # TODO: Your Battlesnake Username
-        "color": "#f2c84e",  # TODO: Choose color
-        "head": "sand-worm",  # TODO: Choose head
-        "tail": "mlh-gene",  # TODO: Choose tail
+        "color": "#ffe6e6",  # TODO: Choose color
+        "head": "do-sammy",  # TODO: Choose head
+        "tail": "cosmic-horror",  # TODO: Choose tail
     }
 
 
@@ -47,24 +47,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
     next_moves: list = make_directions(my_head)
 
     safe_moves: list = make_safe_moves(game_state)
-
-    if len(safe_moves) == 0:
-        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
-        return {"move": "down"}
-
-    destroy_moves = make_target_moves(game_state, safe_moves,"destroy") 
-                      
-    if len(destroy_moves) != 0:
-        next_move: list  = random.choice(destroy_moves)
-        print(f"MOVE {game_state['turn']}: {next_move}")
-        return {"move": next_move}
-
-    feast_moves: list = make_target_moves(game_state, safe_moves, "feast")
-  
-    if len(feast_moves) != 0:
-        next_move: list  = random.choice(feast_moves)
-        print(f"MOVE {game_state['turn']}: {next_move}")
-        return {"move": next_move}
   
     optimal: list = []
     max: int = 0
@@ -82,7 +64,26 @@ def move(game_state: typing.Dict) -> typing.Dict:
             max = move[1]
           
     safe_moves = max_connected
+
+    if len(safe_moves) == 0:
+        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
+        return {"move": "down"}
+
+    destroy_moves = make_target_moves(game_state, safe_moves,"destroy") 
+    print(f"destroy:{destroy_moves}")                  
+    if len(destroy_moves) != 0:
+        next_move: list  = random.choice(destroy_moves)
+        print(f"MOVE {game_state['turn']}: {next_move}")
+        return {"move": next_move}
+
+    feast_moves: list = make_target_moves(game_state, safe_moves, "feast")
+    print(f"feast:{feast_moves}")
+    if len(feast_moves) != 0:
+        next_move: list  = random.choice(feast_moves)
+        print(f"MOVE {game_state['turn']}: {next_move}")
+        return {"move": next_move}
   
+    print(f"safe:{safe_moves}")
     next_move: list  = random.choice(safe_moves)
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
@@ -110,6 +111,7 @@ def make_safe_moves(game_state: dict) -> list:
 
     if (len(tmp) != 0):        # avoids moves with high chance of collision
         safe_moves = tmp
+
 
     return safe_moves  
 
@@ -428,11 +430,21 @@ def move_towards(position: dict, target: dict):
       
     if position['x'] > target['x']:
         moves.append("left")
+
+    if position['x'] == target['x']:
+        moves.append("right")
+        moves.append("left")
       
     if position['y'] < target['y']:
         moves.append("up")
+      
     if position['y'] > target['y']:
         moves.append("down")
+
+    if position['y'] == target['y']:
+        moves.append("up")
+        moves.append("down")
+
     return moves
   
 # Start server when `python main.py` is run
