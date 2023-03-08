@@ -70,14 +70,14 @@ def move(game_state: typing.Dict) -> typing.Dict:
         return {"move": "down"}
 
     destroy_moves = make_target_moves(game_state, safe_moves,"destroy") 
-    print(f"destroy:{destroy_moves}")                  
+              
     if len(destroy_moves) != 0:
         next_move: list  = random.choice(destroy_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
 
     feast_moves: list = make_target_moves(game_state, safe_moves, "feast")
-    print(f"feast:{feast_moves}")
+  
     if len(feast_moves) != 0:
         next_move: list  = random.choice(feast_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
@@ -430,19 +430,11 @@ def move_towards(position: dict, target: dict):
       
     if position['x'] > target['x']:
         moves.append("left")
-
-    if position['x'] == target['x']:
-        moves.append("right")
-        moves.append("left")
       
     if position['y'] < target['y']:
         moves.append("up")
       
     if position['y'] > target['y']:
-        moves.append("down")
-
-    if position['y'] == target['y']:
-        moves.append("up")
         moves.append("down")
 
     return moves
