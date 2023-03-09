@@ -44,12 +44,21 @@ def end(game_state: typing.Dict):
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
     my_head: dict = game_state['you']['body'][0]  # Coordinates of your head
+    my_tail: dict = game_state['you']['body'][-1] 
     next_moves: list = make_directions(my_head)
 
     safe_moves: list = make_safe_moves(game_state)
-  
+
+    tail_access: list = []
     optimal: list = []
     max: int = 0
+  
+    for move in next_moves:        # add moves that have a direct path to our tail
+        if check_direct_path(game_state, move[1], my_tail):
+            tail_access.append(move)
+    if len(tail_access) != 0:        # if there are none then the following code picks the one 
+        next_moves = tail_access     # that is connected to the greatest amount of sapce
+  
     for move in next_moves:
         if move[0] in safe_moves:
             value: int = connected(game_state, move[1])
@@ -65,27 +74,26 @@ def move(game_state: typing.Dict) -> typing.Dict:
           
     safe_moves = max_connected
 
-    if len(safe_moves) == 0:
+    if len(safe_moves) == 0:            # if here then the game is over
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
 
     destroy_moves = make_target_moves(game_state, safe_moves,"destroy") 
               
-    if len(destroy_moves) != 0:
+    if len(destroy_moves) != 0:        # if here we are trying to kill another snake
         next_move: list  = random.choice(destroy_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
 
     feast_moves: list = make_target_moves(game_state, safe_moves, "feast")
-  
-    if len(feast_moves) != 0:
+      
+    if len(feast_moves) != 0:          # if here we are tryin to chase food
         next_move: list  = random.choice(feast_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
   
-    print(f"safe:{safe_moves}")
-    next_move: list  = random.choice(safe_moves)
-    print(f"MOVE {game_state['turn']}: {next_move}")
+    next_move: list  = random.choice(safe_moves)        # none of the previous options are possible to just 
+    print(f"MOVE {game_state['turn']}: {next_move}")    # choose a direction that is connected to the most space
     return {"move": next_move}
 
 def make_safe_moves(game_state: dict) -> list:
@@ -134,6 +142,9 @@ def make_target_moves(game_state: dict, safe_moves: list, mode: str) -> list:
       
     if mode == "feast":
         targets = make_food(game_state)
+
+    if mode == "tail":
+        targets = [(game_state['you']['body'][-1],"null")]
       
     target_moves: list = []
   
