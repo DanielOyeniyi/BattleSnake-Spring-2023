@@ -48,11 +48,9 @@ def move(game_state: typing.Dict) -> typing.Dict:
     next_moves: list = make_directions(my_head)
     safe_moves: list = make_safe_moves(game_state)
 
-
-
     tail_access: list = []
     for move in next_moves:        # add moves that have a direct path to our tail
-        if check_direct_path(game_state, move[1], my_tail):
+        if check_direct_path(game_state, move[1], my_tail, ""):
             tail_access.append(move)
 
     tmp: list = []
@@ -73,7 +71,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     max_connected: list = []
     for move in optimal:
-        if move[1] >= max:
+        if move[1] >=  max:
             max_connected.append(move[0])
             max = move[1]
           
@@ -81,7 +79,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     if len(safe_moves) == 0:
         print(f"MOVE {game_state['turn']}: {safe_moves}")
         return {"move": "down"}        
-
+    '''
     destroy_moves = make_target_moves(game_state, safe_moves,"destroy") 
     destroy_moves = target_mid_point(game_state, destroy_moves)
               
@@ -89,7 +87,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
         next_move: list  = random.choice(destroy_moves)
         print(f"MOVE {game_state['turn']}: {next_move}")
         return {"move": next_move}
-
+    '''
     feast_moves: list = make_target_moves(game_state, safe_moves, "feast")
     feast_moves = target_mid_point(game_state, feast_moves)
       
@@ -156,7 +154,7 @@ def make_target_moves(game_state: dict, safe_moves: list, mode: str) -> list:
         possible: list = []
         if len(target_moves) == 0:
             for move in next_moves:
-                if check_direct_path(game_state, move[1], target[0]) and move[0] in safe_moves:
+                if check_direct_path(game_state, move[1], target[0], "") and move[0] in safe_moves:
                     possible.append(move)
             if len(possible) != 0:     
                 tmp: list = move_towards(my_head, target[0])
@@ -203,13 +201,7 @@ def make_food(game_state: dict, safe_moves: list) -> list:
             if my_distance >= head_distance:
                 worth = False
      
-        if worth: 
-            direct_path: bool = False
-            for move in next_moves:
-                if check_direct_path(game_state, move[1], food):
-                    direct_path = True
-
-            if direct_path:
+        if worth and check_direct_path(game_state, move[1], food, "head"):
                 food_list.append((food, my_distance))
           
     food_list = sorted(food_list, key=lambda tup: tup[1])
@@ -237,12 +229,7 @@ def make_prey(game_state: dict, safe_moves: dict) -> list:
     for snake in game_state['board']['snakes']:
         snake_head = snake['body'][0]
       
-        if snake['length'] < my_length:
-            direct_path: bool = False
-            for move in next_moves:
-                if check_direct_path(game_state, move[1], snake_head):
-                    direct_path = True
-            if direct_path:
+        if snake['length'] < my_length and check_direct_path(game_state, move[1], snake_head, "head"):
                 distance: int = abs(snake_head['x'] - my_head['x']) 
                 distance += abs(snake_head['y'] - my_head['y'])
                 prey.append((snake['body'][0], distance))
@@ -388,7 +375,7 @@ def check_collisions(game_state: dict, position: dict) -> bool:
           
     return True   
 
-def check_direct_path(game_state: dict, position: dict, target: dict) -> bool:
+def check_direct_path(game_state: dict, position: dict, target: dict, mode: str) -> bool:
     '''
     checks if there is a direct path from the postion to the target
   
@@ -400,9 +387,13 @@ def check_direct_path(game_state: dict, position: dict, target: dict) -> bool:
   
     board_width: int = game_state['board']['width']
     board_height: int = game_state['board']['height']
+    my_head: dict = game_state['you']['body'][0] 
     marked: list = [[False]*board_width for i in range(board_height)]
     snakes = make_snakes(game_state)
     boundaries = make_boundaries(game_state)
+
+    if mode == "head":
+        snakes.remove(my_head)
   
     if check_direct_path_helper(snakes, boundaries, position, target, marked) > 0:
         return True
